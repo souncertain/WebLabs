@@ -94,4 +94,27 @@ app.post('/add', function (req, res) {
 
 });
 
+app.post('/delete', function(req, res){
+    const index = Number(req.body.index);
+    fs.readFile(nailsFile, 'utf8', function(err, data){
+        if(err){
+            console.error(err);
+            return res.redirect('/all');
+        }
+        let nails = JSON.parse(data);
+        if(!isNaN(index) && index >= 0 && index < nails.length){
+            nails.splice(index, 1);
+            fs.writeFile(nailsFile, JSON.stringify(nails, null, 2), function(err){
+                if(err){
+                    console.error(err);
+                }
+                res.redirect('/all');
+            });
+        }
+        else{
+            res.redirect('/all');
+        }
+    });
+});
+
 app.listen(3000)
