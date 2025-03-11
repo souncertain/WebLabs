@@ -1,31 +1,97 @@
-const express = require('express')
-const fs = require('fs')
-const ejs = require('ejs')
-const app = express()
+const express = require('express');
+const fs = require("fs");
+const app = express();
 
-app.use(express.urlencoded());
+const nailsFile = './nails.json';
+
+app.set('view engine', 'ejs');
+
+app.use(express.urlencoded({ extended: true }));
 
 app.get('/', function (req, res) {
-    const date = new Date();
-    const x = [1, 2, 3];
-    ejs.renderFile('D:/WEB_LABS/index.ejs',{
-        date,
-        hello: 'Hello World!',
-        xxx: x
-        }, {}, function (str) {
-            res.send(str);
+    fs.readFile(nailsFile, function (err, data) {
+        const nails = JSON.parse(data);
+
+        res.render('index', {
+            nails
+        });
     });
 });
 
+app.get('/all', function (req, res) {
+    fs.readFile(nailsFile, function (err, data) {
+        const nails = JSON.parse(data);
 
-app.post('/add', function(req, res){
-    const name = req.body.name;
-
-    if (name){
-        fs.readFile()
-    }
+        res.render('all_nails', {
+            nails
+        });
+    });
 });
 
+app.post('/add', function (req, res) {
+    const name = req.body.name;
+    const date = req.body.date;
+    const time = req.body.time;
 
-  
+    if (name && date && time) {
+        fs.readFile(nailsFile, function (err, data) {
+            const nails = JSON.parse(data);
+            
+            let flag = true;
+            
+            const dayDate = Number(date.substring(0,2));
+            const monthDate = Number(date.substring(3,5));
+            const yearDate = Number(date.substring(6));
+            
+            if(time.length < 5){
+                flag = false;
+            }
+
+            const hourDate = Number(time.substring(0, 2));
+            const minutesDate = Number(time.substring(3, 5));
+
+
+            const first = (isNaN(dayDate) || isNaN(monthDate) || 
+                isNaN(yearDate) || yearDate === 0 ||
+                monthDate === 0 || isNaN(hourDate) || isNaN(minutesDate))
+
+            if (first){
+                console.error("Неверный формат");
+                flag = false;
+            }
+
+            nails.forEach(appointment => {
+                const dayAppointment = Number(appointment.date.substring(0,2));
+                const monthAppointment = Number(appointment.date.substring(3,5));
+                const yearAppointment = Number(appointment.date.substring(6));
+
+                const hourAppointment = Number(appointment.time.substring(0,2));
+                const minutesAppointment = Number(appointment.time.substring(3,5));
+                
+                const newAppointmentDate = new Date(yearAppointment, monthAppointment - 1, dayAppointment, hourAppointment, minutesAppointment);
+                const newInputDate = new Date(yearDate, monthDate - 1, dayDate, hourDate, minutesDate);
+
+
+                if(newAppointmentDate.getDate() === newInputDate.getDate() && newAppointmentDate.getTime() === newInputDate.getTime()){
+                    flag = false;
+                }
+            });
+            if(flag){
+                nails.push({
+                    name, date, time
+                })
+                fs.writeFile(nailsFile, JSON.stringify(nails), function (err) {
+                    res.redirect('/');
+                });
+            }
+            else{
+                res.redirect('/');
+            }
+        });
+    } else {
+        res.redirect("/");
+    }
+
+});
+
 app.listen(3000)

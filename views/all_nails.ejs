@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все записи</title>
+    <style>
+        .nails {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .nails-date {
+            margin-left:20px;
+        }
+
+        .nails-time {
+            margin-left:20px;
+        }
+    </style>
+</head>
+<body>
+    <form action='/all' method="GET">
+        <h1>Все записи:</h1>
+        <div>
+            <% let i = 0;
+                for(let nail of nails) { %>
+                <%
+                const day = nail.date.substring(0,2)
+                const month = nail.date.substring(3,5)
+                const year = nail.date.substring(6)
+
+                const hour = nail.time.substring(0,2)
+                const minutes = nail.time.substring(3,5)
+
+                const d1 = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minutes));
+                const now = new Date();
+                if(now < d1){%>
+                    <div class="nails">
+                        <div class="nails-name">
+                            <%= nail.name %>
+                        </div>
+                        <div class="nails-date">
+                            <%= nail.date %>
+                        </div>
+                        <div class="nails-time">
+                            <%= nail.time %>
+                        </div>
+                    </div>
+                <%}%>
+            <% i++; } %>    
+        </div>
+    </form>
+    <form action= '/' method="get">
+        <input type = 'submit' name='back' value = 'Назад'>
+    </form>
+</body>
+</html>
