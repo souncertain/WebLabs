@@ -7,14 +7,22 @@
 </head>
 <body>
     <form action='/add' method='POST'>
-        <label>Введите своё имя, дату и время</label><br>
-        <input type='text' name='name' /><br><br>
+        <label><%= user.username %>,введите своё имя, дату и время</label><br>
         <input type='text' name='date' /><br><br>
         <input type='text' name='time' /><br><br>
         <input type='submit' name='add' value='Записаться' /><br><br>
     </form>
+    <% if(user.isAdmin){ %>
     <form action="/all" method="get">
-        <input type ='submit' name ='all' value ='Все записи'>
+        <input type ='submit' name ='all' value ='Все записи'><br><br>
+    </form>
+    <%}else{ %>
+        <form action="/all" method="get">
+            <input type ='submit' name ='all' value ='Мои записи'><br><br>
+        </form>
+    <% } %>
+    <form action="/logout" method="get">
+        <input type ='submit' value ='Выйти'><br><br>
     </form>
 </body>
 </html>

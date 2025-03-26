@@ -1,35 +1,106 @@
 const express = require('express');
 const fs = require("fs");
 const app = express();
+const cp = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+
+const jwtKey = ';iojth[249ht04jt043j[0gfjq430[pgfjwe[0fjwe';
 
 const nailsFile = './nails.json';
+const usersFile = './users.json';
 
 app.set('view engine', 'ejs');
-
+app.use(cp());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', function (req, res) {
-    fs.readFile(nailsFile, function (err, data) {
-        const nails = JSON.parse(data);
-
-        res.render('index', {
-            nails
+app.use((req, res, next) => {
+    const userCookie = req.cookies.user;
+    if (userCookie) {
+        jwt.verify(userCookie, jwtKey, (err, decoded) => {
+            if (err) {
+                console.log(err);
+            } else {
+                req.user = {
+                    username: decoded.username,
+                    isAdmin: decoded.isAdmin
+                }
+            }
+            next();
         });
-    });
+        return;
+    }
+    next();
+})
+
+function auth(req, res, next) {
+    if (req.user) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+app.get('/', auth, (req, res) => {
+    return res.render('index', {user: req.user});
+})
+
+app.get('/login', (req, res) => {
+    res.render('login');
+}) 
+
+app.get('/logout', (req, res) => {
+    res.clearCookie('user'); 
+    res.redirect('/login'); 
 });
+
+app.post('/login', (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+    if (req.body.action === "Register"){
+        fs.readFile(usersFile, function(err, data){
+            const users = JSON.parse(data);
+            console.log(users);
+            if (users.some(user => user.username === username)) {
+                return res.redirect('/login');
+            }
+            isAdmin = false;
+            console.log(username, password, isAdmin);
+            users.push({username, password, isAdmin});
+            fs.writeFile(usersFile, JSON.stringify(users), function (err) {
+                res.redirect('/');
+            });
+        })
+        return;
+    }
+    else{
+        fs.readFile(usersFile, function(err, data){
+            const users = JSON.parse(data);
+            console.log(users);
+            const user = users.find(user => user.username === username && user.password === password);
+            if (user) {
+                const token = jwt.sign({username: user.username, isAdmin: user.isAdmin}, jwtKey);
+                res.cookie('user', token);
+                return res.redirect('/');
+            }
+            else{
+                res.redirect('/login');
+            }
+        })
+    }
+})
 
 app.get('/all', function (req, res) {
     fs.readFile(nailsFile, function (err, data) {
         const nails = JSON.parse(data);
-
+        const user = req.user;
         res.render('all_nails', {
-            nails
+            nails,
+            user
         });
     });
 });
 
 app.post('/add', function (req, res) {
-    const name = req.body.name;
+    const name = req.user.username;
     const date = req.body.date;
     const time = req.body.time;
 
