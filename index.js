@@ -88,7 +88,7 @@ app.post('/login', (req, res) => {
     }
 })
 
-app.get('/all', function (req, res) {
+app.get('/all', auth, function (req, res) {
     fs.readFile(nailsFile, function (err, data) {
         const nails = JSON.parse(data);
         const user = req.user;

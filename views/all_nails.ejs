@@ -22,51 +22,21 @@
 <body>
     <h1>Все записи:</h1>
     <div>
-        <% if (user.isAdmin){
+        <%
             let i = 0;
             for(let nail of nails) { %>
             <%
-            const day = nail.date.substring(0,2)
-            const month = nail.date.substring(3,5)
-            const year = nail.date.substring(6)
+            if(user.isAdmin || user.username == nail.name){
+                const day = nail.date.substring(0,2)
+                const month = nail.date.substring(3,5)
+                const year = nail.date.substring(6)
 
-            const hour = nail.time.substring(0,2)
-            const minutes = nail.time.substring(3,5)
+                const hour = nail.time.substring(0,2)
+                const minutes = nail.time.substring(3,5)
 
-            const d1 = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minutes));
-            const now = new Date();
-            if(now < d1){%>
-                <div class="nails">
-                    <div class="nails-name">
-                        <%= nail.name %>
-                    </div>
-                    <div class="nails-date">
-                        <%= nail.date %>
-                    </div>
-                    <div class="nails-time">
-                        <%= nail.time %>
-                    </div>
-                    <form class="delete-btn" action="/delete" method="POST">
-                        <input type="hidden" name="index" value=<%= i %>>
-                        <button type="submit">Удалить</button>
-                    </form>
-                </div>
-            <%}
-        i++; } 
-    }else{ %>
-        <% let i = 0; %>
-        <% for(let nail of nails) { %>
-            <% if(nail.name === user.username) { 
-                const day = nail.date.substring(0,2);
-                const month = nail.date.substring(3,5);
-                const year = nail.date.substring(6);
-    
-                const hour = nail.time.substring(0,2);
-                const minutes = nail.time.substring(3,5);
-    
                 const d1 = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minutes));
                 const now = new Date();
-                if(now < d1) { %>
+                if(now < d1){%>
                     <div class="nails">
                         <div class="nails-name">
                             <%= nail.name %>
@@ -78,14 +48,13 @@
                             <%= nail.time %>
                         </div>
                         <form class="delete-btn" action="/delete" method="POST">
-                            <input type="hidden" name="index" value="<%= i %>">
+                            <input type="hidden" name="index" value=<%= i %>>
                             <button type="submit">Удалить</button>
                         </form>
                     </div>
-                <% } %>
-            <% } %>
-        <% i++; } %>
-    <% } %>  
+                <%}
+            }
+    i++;} %>
     </div>
     <form action= '/' method="get">
         <input type = 'submit' name='back' value = 'Назад'>
