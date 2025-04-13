@@ -22,42 +22,34 @@
 <body>
     <h1>Все записи:</h1>
     <div>
-        <%
-            let i = 0;
-            for(let nail of nails) { %>
-            <%
-            if(user.isAdmin || user.username == nail.name){
-                const day = nail.date.substring(0,2)
-                const month = nail.date.substring(3,5)
-                const year = nail.date.substring(6)
-
-                const hour = nail.time.substring(0,2)
-                const minutes = nail.time.substring(3,5)
-
-                const d1 = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minutes));
-                const now = new Date();
-                if(now < d1){%>
+        <% let i = 0; %>
+        <% for (let nail of nails) { %>
+            <% if (user.isAdmin || user.username === nail.username) { %>
+                <% const now = new Date(); %>
+                <% const date = new Date(nail.output); %>
+                <% if (now < date) { %> <!-- Проверяем дату с объектом Date -->
                     <div class="nails">
                         <div class="nails-name">
-                            <%= nail.name %>
+                            <%= nail.username %> <!-- Заменяем на username -->
                         </div>
                         <div class="nails-date">
-                            <%= nail.date %>
+                            <%= nail.output %>
                         </div>
                         <div class="nails-time">
                             <%= nail.time %>
                         </div>
                         <form class="delete-btn" action="/delete" method="POST">
-                            <input type="hidden" name="index" value=<%= i %>>
+                            <input type="hidden" name="index" value="<%= i %>">
                             <button type="submit">Удалить</button>
                         </form>
                     </div>
-                <%}
-            }
-    i++;} %>
+                <% } %>
+            <% } %>
+            <% i++; %>
+        <% } %>
     </div>
-    <form action= '/' method="get">
-        <input type = 'submit' name='back' value = 'Назад'>
+    <form action="/" method="get">
+        <input type="submit" name="back" value="Назад">
     </form>
 </body>
 </html>

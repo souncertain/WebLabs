@@ -1,13 +1,10 @@
 const express = require('express');
-const fs = require("fs");
 const app = express();
 const cp = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const db = require('./db');
 
 const jwtKey = ';iojth[249ht04jt043j[0gfjq430[pgfjwe[0fjwe';
-
-const nailsFile = './nails.json';
-const usersFile = './users.json';
 
 app.set('view engine', 'ejs');
 app.use(cp());
@@ -52,140 +49,83 @@ app.get('/logout', (req, res) => {
     res.redirect('/login'); 
 });
 
-app.post('/login', (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-    if (req.body.action === "Register"){
-        fs.readFile(usersFile, function(err, data){
-            const users = JSON.parse(data);
-            console.log(users);
-            if (users.some(user => user.username === username)) {
-                return res.redirect('/login');
-            }
-            isAdmin = false;
-            console.log(username, password, isAdmin);
-            users.push({username, password, isAdmin});
-            fs.writeFile(usersFile, JSON.stringify(users), function (err) {
-                res.redirect('/');
-            });
-        })
-        return;
-    }
-    else{
-        fs.readFile(usersFile, function(err, data){
-            const users = JSON.parse(data);
-            console.log(users);
-            const user = users.find(user => user.username === username && user.password === password);
-            if (user) {
-                const token = jwt.sign({username: user.username, isAdmin: user.isAdmin}, jwtKey);
-                res.cookie('user', token);
-                return res.redirect('/');
-            }
-            else{
-                res.redirect('/login');
-            }
-        })
-    }
-})
+app.post('/login', async (req, res) => {
+    const { username, password, action } = req.body;
 
-app.get('/all', auth, function (req, res) {
-    fs.readFile(nailsFile, function (err, data) {
-        const nails = JSON.parse(data);
-        const user = req.user;
-        res.render('all_nails', {
-            nails,
-            user
-        });
-    });
+    if (action === "Register") {
+        const existing = await db.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (existing.rows.length > 0) {
+            return res.redirect('/login');
+        }
+        await db.query('INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3)', [username, password, false]);
+        return res.redirect('/');
+    } else {
+        const result = await db.query('SELECT * FROM users WHERE username = $1 AND password = $2', [username, password]);
+        const user = result.rows[0];
+        if (user) {
+            const token = jwt.sign({ username: user.username, isAdmin: user.is_admin }, jwtKey);
+            res.cookie('user', token);
+            return res.redirect('/');
+        } else {
+            return res.redirect('/login');
+        }
+    }
 });
 
-app.post('/add', function (req, res) {
-    const name = req.user.username;
+app.get('/all', auth, async (req, res) => {
+    const result = await db.query('SELECT * FROM Nails ORDER BY date, time');
+    const nails = result.rows.map(nail => {
+        const date = nail.date.toString();
+        const output = new Date(Date.parse(date)).toISOString().slice(0, -1).split('T')[0];
+        return {
+            ...nail,
+            output
+        };
+    })
+
+    console.log(nails)
+
+    res.render('all_nails',{
+        nails: nails,
+        user: req.user 
+    })
+});
+
+app.post('/add', async (req, res) => {
+    const username = req.user.username;
     const date = req.body.date;
     const time = req.body.time;
 
-    if (name && date && time) {
-        fs.readFile(nailsFile, function (err, data) {
-            const nails = JSON.parse(data);
-            
-            let flag = true;
-            
-            const dayDate = Number(date.substring(0,2));
-            const monthDate = Number(date.substring(3,5));
-            const yearDate = Number(date.substring(6));
-            
-            if(time.length < 5){
-                flag = false;
-            }
+    if(!username || !date || !time){
+        res.redirect('/')
+    }
+    const existing = await db.query(
+        'SELECT * FROM Nails WHERE date = $1 AND time = $2',
+        [date, time]
+    );
 
-            const hourDate = Number(time.substring(0, 2));
-            const minutesDate = Number(time.substring(3, 5));
+    if (existing.rows.length > 0) return res.redirect('/');
 
+    await db.query(
+        'INSERT INTO nails (username, date, time) VALUES ($1, $2, $3)',
+        [username, date, time]
+    );
 
-            const first = (isNaN(dayDate) || isNaN(monthDate) || 
-                isNaN(yearDate) || yearDate === 0 ||
-                monthDate === 0 || isNaN(hourDate) || isNaN(minutesDate))
+    res.redirect('/');
+});
 
-            if (first){
-                console.error("Неверный формат");
-                flag = false;
-            }
+app.post('/delete', auth, async (req, res) => {
+    const index = Number(req.body.index);
+    const result = await db.query('SELECT * FROM Nails ORDER BY date, time');
+    const nails = result.rows;
 
-            nails.forEach(appointment => {
-                const dayAppointment = Number(appointment.date.substring(0,2));
-                const monthAppointment = Number(appointment.date.substring(3,5));
-                const yearAppointment = Number(appointment.date.substring(6));
-
-                const hourAppointment = Number(appointment.time.substring(0,2));
-                const minutesAppointment = Number(appointment.time.substring(3,5));
-                
-                const newAppointmentDate = new Date(yearAppointment, monthAppointment - 1, dayAppointment, hourAppointment, minutesAppointment);
-                const newInputDate = new Date(yearDate, monthDate - 1, dayDate, hourDate, minutesDate);
-
-
-                if(newAppointmentDate.getDate() === newInputDate.getDate() && newAppointmentDate.getTime() === newInputDate.getTime()){
-                    flag = false;
-                }
-            });
-            if(flag){
-                nails.push({
-                    name, date, time
-                })
-                fs.writeFile(nailsFile, JSON.stringify(nails), function (err) {
-                    res.redirect('/');
-                });
-            }
-            else{
-                res.redirect('/');
-            }
-        });
-    } else {
-        res.redirect("/");
+    if (!isNaN(index) && index >= 0 && index < nails.length) {
+        const id = nails[index].id;
+        await db.query('DELETE FROM Nails WHERE id = $1', [id]);
     }
 
+    res.redirect('/all');
 });
 
-app.post('/delete', function(req, res){
-    const index = Number(req.body.index);
-    fs.readFile(nailsFile, 'utf8', function(err, data){
-        if(err){
-            console.error(err);
-            return res.redirect('/all');
-        }
-        let nails = JSON.parse(data);
-        if(!isNaN(index) && index >= 0 && index < nails.length){
-            nails.splice(index, 1);
-            fs.writeFile(nailsFile, JSON.stringify(nails, null, 2), function(err){
-                if(err){
-                    console.error(err);
-                }
-                res.redirect('/all');
-            });
-        }
-        else{
-            res.redirect('/all');
-        }
-    });
-});
 
 app.listen(3000)
