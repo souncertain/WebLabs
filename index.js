@@ -83,13 +83,41 @@ app.get('/all', auth, async (req, res) => {
         };
     })
 
-    console.log(nails)
-
     res.render('all_nails',{
         nails: nails,
         user: req.user 
     })
 });
+
+app.get('/statistic', auth, (req, res) => {
+    if (!req.user.isAdmin) return res.redirect('/');
+    res.render('statistic', { stats: null });
+});
+
+app.post('/statistic', auth, async (req, res) => {
+    if (!req.user.isAdmin) return res.redirect('/');
+
+    const { from, to } = req.body;
+
+    if (!from || !to) return res.redirect('/statistic');
+
+    const result = await db.query(
+        `SELECT date, COUNT(*) as count 
+         FROM Nails 
+         WHERE date BETWEEN $1 AND $2 
+         GROUP BY date 
+         ORDER BY date`,
+        [from, to]
+    );
+
+    const stats = result.rows.map(row => ({
+        date: row.date.toISOString().split('T')[0],
+        count: row.count
+    }));
+
+    res.render('statistic', { stats });
+});
+
 
 app.post('/add', async (req, res) => {
     const username = req.user.username;

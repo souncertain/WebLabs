@@ -8,8 +8,8 @@
 <body>
     <form action='/add' method='POST'>
         <label><%= user.username %>,введите своё имя, дату и время</label><br>
-        <input type='text' name='date' /><br><br>
-        <input type='text' name='time' /><br><br>
+        <input type='date' name='date' required/><br><br>
+        <input type='time' name='time' /><br><br>
         <input type='submit' name='add' value='Записаться' /><br><br>
     </form>
     <% if(user.isAdmin){ %>
