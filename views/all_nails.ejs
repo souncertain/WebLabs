@@ -27,10 +27,10 @@
             <% if (user.isAdmin || user.username === nail.username) { %>
                 <% const now = new Date(); %>
                 <% const date = new Date(nail.output); %>
-                <% if (now < date) { %> <!-- Проверяем дату с объектом Date -->
+                <% if (now < date) { %>
                     <div class="nails">
                         <div class="nails-name">
-                            <%= nail.username %> <!-- Заменяем на username -->
+                            <%= nail.username %>
                         </div>
                         <div class="nails-date">
                             <%= nail.output %>
